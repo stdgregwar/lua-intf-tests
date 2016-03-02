@@ -121,7 +121,7 @@ extern "C"
 #endif
 
 #ifdef LUAINTF_USELUAJIT
-#include <lua.hpp>
+#include "lua.hpp"
 #else
 #include "lualib.h"
 #include "lauxlib.h"

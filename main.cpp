@@ -8,12 +8,13 @@ using namespace LuaIntf;
 class Foo
 {
 public:
+    double x;
     Foo(int val = 0) : mVal(val){}
     void display(){cout << mVal << endl;}
-    int val(){return mVal;}
-    void set_val(int val){mVal = val;}
+    const unsigned long long& val(){return mVal;}
+    void set_val(const  unsigned long long& val){mVal = val;}
 private:
-    int mVal;
+    unsigned long long mVal;
 };
 
 int main()
@@ -25,10 +26,15 @@ int main()
             .addFunction("display", &Foo::display)
             .endClass();
 
-    for(int i = 0 ; i < 50 ; i++)
+    l.doString("f = Foo() \n f.val = 1\n print(type(f))");
+    /*for(int i = 0 ; i < 100 ; i++)
     {
-        l.doFile("bench.lua");
-    }
+        //l.doFile("bench.lua");
+        l.doString("f.val = 2*f.val \n f:display()");
+    }*/
+
+
+    //l.doFile("printvscout.lua");
 
     return 0;
 }
