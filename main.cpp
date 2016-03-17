@@ -1,4 +1,5 @@
 #include <iostream>
+#include <functional>
 
 #include "LuaIntf.h"
 
@@ -24,49 +25,53 @@ public:
     const unsigned long long& val(){return mVal;}
     void set_val(const  unsigned long long& val){mVal = val;}
     SharedFoo plus(){return SharedFoo(new Foo(mVal+1));}
+    void setCallback(LuaRef c){mCallback = c;}
+    LuaRef callback(){return mCallback;}
     ~Foo(){cout << "Foo dtor " << mVal << endl;}
 private:
     unsigned long long mVal;
+    LuaRef mCallback;
 };
+
+void smartLuaPrint(LuaRef r, bool end = true)
+{
+    switch(r.type())
+    {
+        case LuaTypeID::TABLE:
+        {
+            cout << "{";
+            bool nfirst = false;
+            for(auto it = r.begin(); it != r.end(); ++it)
+            {
+                if(nfirst) cout << ", ";
+                smartLuaPrint(it.value(),false);
+                nfirst = true;
+            }
+            cout << "}";
+            break;
+        }
+        default:
+            cout << r.toValue<string>();
+        break;
+    }
+    if(end) cout << endl;
+}
 
 int main()
 {
+    using namespace std::placeholders;
     LuaContext l;
     LuaBinding(l).beginClass<Foo>("Foo")
             .addConstructor(LUA_SP(SharedFoo),LUA_ARGS(_opt<int>))
             .addProperty("val",&Foo::val,&Foo::set_val)
+            .addProperty("fun", &Foo::callback,&Foo::setCallback)
             .addFunction("display", &Foo::display)
             .addFunction("plus",&Foo::plus)
-            .endClass();
+            .endClass()
+            .addFunction("print",std::function<void(LuaRef)>(std::bind(smartLuaPrint,_1,true)));
 
-    l.doString("val = Foo(69) \n val:display()");
-    l.doString("val2 = val:plus()");
-
-    SharedFoo sptr;
-    {
-        cout << "In" << endl;
-        SharedFoo fptr = l.getGlobal<SharedFoo>("val2");
-        l.doString("val:display()");
-        fptr->set_val(42);
-        //sptr = fptr;
-    }
-
-    cout << "Out" << endl;
-
-    l.doString("val2 = val1 \n val1 = nil");
-    l.gc();
-    l.doString("val2 = nil");
-    l.gc();
-
-    cout << "After GC" << endl;
-    /*for(int i = 0 ; i < 100 ; i++)
-    {
-        //l.doFile("bench.lua");
-        l.doString("f.val = 2*f.val \n f:display()");
-    }*/
-
-
-    //l.doFile("printvscout.lua");
+    l.doFile("printvscout.lua");
+    l.doString("j = \"string bloubi\" \n i = {4,2,{6,7},j} \n print(i)");
 
     return 0;
 }
